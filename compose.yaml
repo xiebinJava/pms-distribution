@@ -1,0 +1,139 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DB:-pms}
+      MYSQL_USER: ${MYSQL_USER:?set MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: "1.0"
+    networks: [pms-data]
+
+  uploads-init:
+    image: busybox:1.36.1-musl
+    depends_on:
+      mysql:
+        condition: service_healthy
+    user: "0:0"
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1m
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - pms-uploads:/var/lib/pms/uploads
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mkdir -p /var/lib/pms/uploads &&
+        chown -R 10001:10001 /var/lib/pms/uploads &&
+        chmod 0750 /var/lib/pms/uploads
+    restart: "no"
+    mem_limit: 128m
+    cpus: "0.25"
+
+  backend:
+    image: ${PMS_BACKEND_IMAGE}:${PMS_VERSION}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      uploads-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    cpus: "1.0"
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DB: ${MYSQL_DB:-pms}
+      MYSQL_USER: ${MYSQL_USER:?set MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD}
+      PMS_JWT_SECRET: ${PMS_JWT_SECRET}
+      PMS_DEPLOYMENT_ENV: ${PMS_DEPLOYMENT_ENV:-development}
+      PMS_BOOTSTRAP_ADMIN_EMAIL: ${PMS_BOOTSTRAP_ADMIN_EMAIL}
+      PMS_BOOTSTRAP_ADMIN_USERNAME: ${PMS_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      PMS_BOOTSTRAP_ADMIN_NAME_ZH: ${PMS_BOOTSTRAP_ADMIN_NAME_ZH:-系统管理员}
+      PMS_BOOTSTRAP_ADMIN_PASSWORD: ${PMS_BOOTSTRAP_ADMIN_PASSWORD}
+      PMS_CORS_ALLOWED_ORIGINS: ${PMS_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      PMS_UPLOAD_DIR: /var/lib/pms/uploads
+      PMS_UPLOAD_QUOTA_BYTES: ${PMS_UPLOAD_QUOTA_BYTES:-524288000}
+      PMS_STORAGE_TYPE: ${PMS_STORAGE_TYPE:-local}
+      PMS_WEBHOOK_ENABLED: ${PMS_WEBHOOK_ENABLED:-false}
+      PMS_NOTIFICATION_STARTUP_CHECK: ${PMS_NOTIFICATION_STARTUP_CHECK:-false}
+      PMS_NOTIFICATION_TASK_REMINDER_ENABLED: ${PMS_NOTIFICATION_TASK_REMINDER_ENABLED:-false}
+      PMS_NOTIFICATION_TASK_REMINDER_CRON: "${PMS_NOTIFICATION_TASK_REMINDER_CRON:-0 0 9 * * *}"
+      PMS_NOTIFICATION_TASK_REMINDER_ZONE: ${PMS_NOTIFICATION_TASK_REMINDER_ZONE:-Asia/Shanghai}
+      PMS_NOTIFICATION_TASK_REMINDER_DUE_SOON_DAYS: ${PMS_NOTIFICATION_TASK_REMINDER_DUE_SOON_DAYS:-7}
+      PMS_MAIL_ENABLED: ${PMS_MAIL_ENABLED:-false}
+      PMS_MAIL_HOST: ${PMS_MAIL_HOST:-}
+      PMS_MAIL_PORT: ${PMS_MAIL_PORT:-587}
+      PMS_MAIL_USERNAME: ${PMS_MAIL_USERNAME:-}
+      PMS_MAIL_PASSWORD: ${PMS_MAIL_PASSWORD:-}
+      PMS_MAIL_FROM: ${PMS_MAIL_FROM:-}
+      PMS_PUBLIC_BASE_URL: ${PMS_PUBLIC_BASE_URL:-http://localhost:5173}
+      PMS_PASSWORD_RESET_EXPOSE_TOKEN: ${PMS_PASSWORD_RESET_EXPOSE_TOKEN:-false}
+      PMS_INVITATION_EXPOSE_TOKEN: ${PMS_INVITATION_EXPOSE_TOKEN:-false}
+    volumes:
+      - pms-uploads:/var/lib/pms/uploads
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck-backend.sh"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    networks: [pms-data, pms-edge]
+
+  frontend:
+    image: ${PMS_FRONTEND_IMAGE}:${PMS_VERSION}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /var/cache/nginx:rw,noexec,nosuid,size=128m
+      - /var/run:rw,noexec,nosuid,size=1m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    cpus: "0.5"
+    ports:
+      - "${PMS_PORT:-5173}:8080"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck-frontend.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [pms-edge]
+
+volumes:
+  mysql-data:
+  pms-uploads:
+
+networks:
+  pms-data:
+    driver: bridge
+  pms-edge:
+    driver: bridge

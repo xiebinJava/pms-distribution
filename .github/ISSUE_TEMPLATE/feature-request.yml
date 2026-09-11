@@ -1,0 +1,32 @@
+name: 功能建议
+description: 提出产品或发行包改进
+title: "[功能] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题或使用场景
+      description: 现在哪一段流程不好用？
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: 影响谁
+      description: 最终用户、运维、贡献者，还是三者都有？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 怎样才算可以发布？
+    validations:
+      required: true

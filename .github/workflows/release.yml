@@ -1,0 +1,72 @@
+name: release-distribution
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release tag must match vMAJOR.MINOR.PATCH: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+          env_version="$(awk -F= '$1 == "PMS_VERSION" { print $2; exit }' .env.example)"
+          if [[ "$env_version" != "$version" ]]; then
+            echo ".env.example PMS_VERSION ($env_version) must match release tag ($version)" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Validate distribution contract
+        run: bash scripts/test-distribution-contract.sh
+
+      - name: Validate Compose rendering
+        run: bash scripts/test-compose-config.sh
+
+      - name: Validate operation safety guards
+        run: bash scripts/test-operations-safety.sh
+
+      - name: Check shell scripts
+        run: bash -n scripts/*.sh docker/*.sh
+
+      - name: Check repository for private identifiers
+        run: ./scripts/check-privacy.sh
+
+      - name: Verify GHCR images are anonymously readable
+        env:
+          PMS_VERSION: ${{ steps.version.outputs.version }}
+        run: bash scripts/verify-ghcr-images.sh
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

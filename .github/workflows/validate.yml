@@ -1,0 +1,49 @@
+name: validate-distribution
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate distribution contract
+        run: bash scripts/test-distribution-contract.sh
+
+      - name: Validate workflow contracts
+        run: bash scripts/test-distribution-workflows.sh
+
+      - name: Validate Compose rendering
+        run: bash scripts/test-compose-config.sh
+
+      - name: Validate operation safety guards
+        run: bash scripts/test-operations-safety.sh
+
+      - name: Validate Docker resource checks
+        run: bash scripts/test-docker-resources.sh
+
+      - name: Check shell scripts
+        run: bash -n scripts/*.sh docker/*.sh
+
+      - name: Check whitespace errors
+        run: git diff --check
+
+      - name: Check repository for private identifiers
+        run: ./scripts/check-privacy.sh
+
+      - name: Validate release workflow contracts in source repositories
+        env:
+          PMS_BACKEND_REPO: ${{ github.workspace }}/../pms-backend
+          PMS_FRONT_REPO: ${{ github.workspace }}/../pms-front
+        run: |
+          set -euo pipefail
+          if [[ -d "$PMS_BACKEND_REPO/.github/workflows" && -d "$PMS_FRONT_REPO/.github/workflows" ]]; then
+            bash scripts/test-release-workflows.sh
+          else
+            echo "Skipping release workflow contract check; sibling source repositories are not checked out."
+          fi

@@ -1,0 +1,6 @@
+PMS is distributed under the Apache License, Version 2.0.
+
+The distribution package references third-party container images. Each image
+remains subject to its own license and security policy. The release process
+must publish the dependency and image attribution list for every release.
+

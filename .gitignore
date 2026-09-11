@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.pms-bootstrap-secrets
+*.log
+backups/
+data/
+.DS_Store
+.idea/
+.vscode/

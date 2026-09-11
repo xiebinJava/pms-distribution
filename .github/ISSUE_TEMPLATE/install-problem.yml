@@ -1,0 +1,72 @@
+name: 安装问题
+description: 报告 Docker Compose 安装、启动、升级或恢复失败
+title: "[安装] "
+labels: ["installation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交日志前请删除密码、JWT、数据库连接串和 SMTP 凭据。
+  - type: input
+    id: version
+    attributes:
+      label: PMS 发行版本
+      description: `.env` 中的 `PMS_VERSION`，或你检出的 Git 标签
+      placeholder: "1.0.6"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 主机平台
+      options:
+        - macOS + Docker Desktop
+        - Linux + Docker Engine
+        - Windows + Docker Desktop
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: docker
+    attributes:
+      label: Docker 与 Compose 版本
+      description: `docker version` 和 `docker compose version` 的输出
+      placeholder: "Docker 27.x, Compose v2.29.x"
+    validations:
+      required: true
+  - type: input
+    id: memory
+    attributes:
+      label: Docker 内存分配
+      description: Docker Desktop 的内存设置；若使用 Docker Engine，填写主机内存
+      placeholder: "2 GiB"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 你执行的步骤
+      description: 请写明完整命令，例如 `./scripts/bootstrap.sh`
+      placeholder: |
+        git clone ...
+        ./scripts/bootstrap.sh
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志
+      description: `./scripts/status.sh`、`./scripts/logs.sh backend` 或 `./scripts/logs.sh mysql` 的输出
+      render: shell

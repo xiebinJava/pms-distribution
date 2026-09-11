@@ -1,0 +1,13 @@
+# Forbidden identifiers for the public tree. This file is excluded from the scan.
+# One extended regular expression per line. Matching is case-insensitive.
+# The published GitHub owner used in clone URLs and GHCR image names is allowed.
+飞速
+飞速创新
+fs\.com
+fsclaw
+谢斌
+brad\.xie
+fs-insight
+fsinsight
+/Users/fs/
+fs-blue
