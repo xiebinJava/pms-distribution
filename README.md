@@ -55,7 +55,7 @@ cd pms-distribution
 
 请立刻修改该密码。MySQL 与 JWT 等基础设施密钥仍由脚本随机生成，写入未被 Git 跟踪的 `.pms-bootstrap-secrets`。生产部署必须更换管理员密码（`validate-production-config.sh` 会拒绝上述默认值）。
 
-当前发行版本：`1.0.6`。镜像在 GHCR，可匿名拉取。
+当前发行版本：`1.0.7`。镜像在 GHCR，可匿名拉取。
 
 如果改了 `PMS_PORT`，请把 `PMS_CORS_ALLOWED_ORIGINS` 和 `PMS_PUBLIC_BASE_URL` 改成同一端口。只改端口、不改 CORS 时，浏览器登录会被后端拒绝。`bootstrap.sh` 在端口已改、CORS 仍是示例值时，会自动对齐（见下方配置）。
 

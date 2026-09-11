@@ -1,11 +1,11 @@
 # 发行镜像归因
 
-每个发行版本引用的第三方镜像仍受其各自许可证约束。`1.0.6` 的坐标如下。
+每个发行版本引用的第三方镜像仍受其各自许可证约束。`1.0.7` 的坐标如下。
 
 | 镜像 | 用途 | 来源 |
 | --- | --- | --- |
-| `ghcr.io/xiebinjava/pms-front:1.0.6` | Nginx 前端入口 | `pms-front` 源码仓库 |
-| `ghcr.io/xiebinjava/pms-backend:1.0.6` | Spring Boot API 与 Flyway 迁移 | `pms-backend` 源码仓库 |
+| `ghcr.io/xiebinjava/pms-front:1.0.7` | Nginx 前端入口 | `pms-front` 源码仓库 |
+| `ghcr.io/xiebinjava/pms-backend:1.0.7` | Spring Boot API 与 Flyway 迁移 | `pms-backend` 源码仓库 |
 | `mysql:8.4` | 默认数据库 | Oracle MySQL |
 | `busybox:1.36.1-musl` | 附件目录初始化 | BusyBox |
 
