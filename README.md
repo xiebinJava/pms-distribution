@@ -18,6 +18,24 @@
 </p>
 
 <p align="center">
+  <img src="docs/screenshots/requirements.png" alt="功能需求澄清与所属系统" width="920" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/topics.png" alt="专题调研工作台" width="450" />
+  <img src="docs/screenshots/stories.png" alt="故事流程与迭代计划会" width="450" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/iterations.png" alt="迭代计划与系统版本关联" width="920" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/iteration-create.png" alt="独立创建迭代：所属项目可选，选择所属系统与系统版本" width="450" />
+  <img src="docs/screenshots/system-versions.png" alt="系统版本：计划中、开发中与已发布" width="450" />
+</p>
+
+<p align="center">
   <img src="docs/screenshots/organization.png" alt="组织架构" width="450" />
   <img src="docs/screenshots/login.png" alt="登录页" width="450" />
 </p>
@@ -31,7 +49,7 @@
   <img src="docs/screenshots/audit.png" alt="审计日志" width="450" />
 </p>
 
-<p align="center"><sub>截图来自隔离演示实例。本次新增截图展示中文界面、流程模板、企业项目看板与审计日志能力。</sub></p>
+<p align="center"><sub>以上 14 张截图于 2026-10-09 使用正式 1.1.0 镜像重新拍摄，均为中文界面。项目、需求、专题、故事、迭代、系统版本和组织信息来自隔离演示库中的虚构数据，不包含真实业务或人员信息。点击图片可查看原图。</sub></p>
 
 ## 1.1.0 更新重点
 
