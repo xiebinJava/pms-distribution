@@ -96,6 +96,8 @@ cd pms-distribution
 
 当前发行版本：[`1.1.0`](https://github.com/xiebinJava/pms-distribution/releases/tag/v1.1.0)。镜像在 GHCR，可匿名拉取，支持 `linux/amd64` 和 `linux/arm64`。
 
+也可直接下载 [tar.gz 安装包](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.0/pms-1.1.0.tar.gz)、[zip 安装包](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.0/pms-1.1.0.zip) 和 [SHA256SUMS](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.0/SHA256SUMS)。把两个安装包与校验文件放在同一目录，运行 `sha256sum -c SHA256SUMS`（macOS 使用 `shasum -a 256 -c SHA256SUMS`）核对后再解压安装。
+
 安装、升级、备份恢复与正式镜像界面的验收范围见 [1.1.0 发布验收记录](docs/operations/release-1.1.0-verification.md)。本版对两项 Spring MVC 发现采用限定到包版本、JAR 路径且于 2026-11-09 到期的“不具备触发条件”例外；这不代表依赖已修复，详见 [安全适用性评估](https://github.com/xiebinJava/pms-backend/blob/main/docs/security/1.1.0-spring-mvc-assessment.md)。其他 HIGH / CRITICAL 安全门禁保持启用。
 
 如果改了 `PMS_PORT`，请把 `PMS_CORS_ALLOWED_ORIGINS` 和 `PMS_PUBLIC_BASE_URL` 改成同一端口。只改端口、不改 CORS 时，浏览器登录会被后端拒绝。`bootstrap.sh` 在端口已改、CORS 仍是示例值时，会自动对齐（见下方配置）。
