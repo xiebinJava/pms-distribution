@@ -29,6 +29,7 @@ EOF
 cat >"$WORK_DIR/bin/docker" <<'EOF'
 #!/usr/bin/env bash
 printf 'docker was invoked: %s\n' "$*" >>"$DOCKER_CALLS"
+printf 'effective image version: %s command: %s\n' "${PMS_VERSION:-unset}" "$*" >>"$DOCKER_CALLS"
 if [[ "$*" == "compose version" ]]; then
   exit 0
 fi
@@ -38,13 +39,14 @@ if [[ "$*" == *" ps -q"* ]]; then
   exit 0
 fi
 if [[ "$1" == "inspect" ]]; then
-  [[ "$*" == *new-* ]] && echo unhealthy || echo healthy
+  if [[ "${FAKE_UPGRADE_SUCCESS:-}" == 1 ]]; then echo healthy; else [[ "$*" == *new-* ]] && echo unhealthy || echo healthy; fi
   exit 0
 fi
 if [[ "$1 $2" == "volume inspect" && "$*" == *restore* ]]; then exit 1; fi
 if [[ "$1 $2" == "run --rm" && "$*" == *mysqldump* ]]; then echo 'SELECT 1;'; exit 0; fi
 if [[ "$1 $2" == "run --rm" && "$*" == *busybox* && "$*" == *tar* ]]; then for arg in "$@"; do case "$arg" in *:/backup) tar -czf "${arg%:/backup}/uploads.tar.gz" --files-from /dev/null;; esac; done; exit 0; fi
 if [[ "$1" == "exec" && "$*" == *old-backend* ]]; then echo '{"status":"UP"}'; exit 0; fi
+if [[ "$1" == "exec" && "$*" == *new-backend* && "${FAKE_UPGRADE_SUCCESS:-}" == 1 ]]; then echo '{"status":"UP"}'; exit 0; fi
 if [[ "$1 $2" == "compose --project-name" && "$*" == *" up -d"* ]]; then n=$(($(cat "$FAKE_PHASE.count" 2>/dev/null || echo 0)+1)); echo "$n" >"$FAKE_PHASE.count"; [[ "$n" -gt 1 ]] && echo rollback >"$FAKE_PHASE" || echo new >"$FAKE_PHASE"; exit 0; fi
 exit 0
 EOF
@@ -123,8 +125,18 @@ assert_refuses "refusing to overwrite current pms-uploads volume" env RESTORE_CO
 FAKE_MYSQL_ID=fake-mysql COMPOSE_PROJECT_NAME=pms-upgrade BACKUP_DIR="$WORK_DIR/upgrade-backups" "$ROOT/scripts/upgrade.sh" 1.0.1 >/dev/null 2>&1 || true
 grep -Fq -- 'old-backend curl' "$DOCKER_CALLS" || fail "upgrade rollback did not verify old backend readiness"
 grep -Fq -- 'compose --project-name pms-upgrade' "$DOCKER_CALLS" || fail "upgrade rollback did not recreate selected project"
+grep -Fq -- "effective image version: 1.0.0 command: compose --project-name pms-upgrade --env-file $ENV_FILE -f $COMPOSE_FILE up -d --force-recreate backend frontend" "$DOCKER_CALLS" || fail "rollback did not restore the exported image version"
+
+# Compose prefers exported variables over --env-file: upgrade must switch both.
+: >"$DOCKER_CALLS"
+rm -f "$FAKE_PHASE" "$FAKE_PHASE.count"
+FAKE_UPGRADE_SUCCESS=1 FAKE_MYSQL_ID=fake-mysql COMPOSE_PROJECT_NAME=pms-upgrade BACKUP_DIR="$WORK_DIR/success-backups" "$ROOT/scripts/upgrade.sh" 1.0.1 >/dev/null
+grep -qx 'PMS_VERSION=1.0.1' "$ENV_FILE" || fail "successful upgrade did not save the target version"
+grep -Fq -- "effective image version: 1.0.1 command: compose --project-name pms-upgrade --env-file $ENV_FILE -f $COMPOSE_FILE pull" "$DOCKER_CALLS" || fail "upgrade pulled the old image because exported PMS_VERSION overrode --env-file"
+grep -Fq -- "effective image version: 1.0.1 command: compose --project-name pms-upgrade --env-file $ENV_FILE -f $COMPOSE_FILE up -d --force-recreate" "$DOCKER_CALLS" || fail "upgrade recreated services with the wrong image version"
 
 # Bootstrap runs in a disposable copy and must select that repository name.
+printf 'rollback\n' >"$FAKE_PHASE"
 fixture="$WORK_DIR/bootstrap-fixture"
 mkdir -p "$fixture/scripts"
 cp "$ROOT/scripts/bootstrap.sh" "$ROOT/scripts/compose-project-name.sh" "$ROOT/scripts/docker-resources.sh" "$fixture/scripts/"

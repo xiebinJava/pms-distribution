@@ -44,6 +44,7 @@ rollback() {
   local code="$?"
   if [[ "$code" -ne 0 ]]; then
     mv "$env_backup" "$ENV_FILE"
+    export PMS_VERSION="$previous_version"
     echo "upgrade failed; restored PMS_VERSION=$previous_version" >&2
     if ! compose up -d --force-recreate backend frontend; then
       echo "rollback failed: could not recreate backend/frontend with PMS_VERSION=$previous_version" >&2
@@ -68,6 +69,8 @@ awk -v version="$target_version" '
   END { if (!replaced) print "PMS_VERSION=" version }
 ' "$ENV_FILE" >"$updated_env"
 mv "$updated_env" "$ENV_FILE"
+# Exported variables take precedence over Compose's --env-file values.
+export PMS_VERSION="$target_version"
 compose pull mysql backend frontend
 compose up -d --force-recreate
 wait_for_readiness || die "backend/frontend did not become healthy; diagnostics follow"
