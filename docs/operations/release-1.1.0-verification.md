@@ -33,6 +33,8 @@
 
 ## 安全适用性例外
 
-仅对 `app/pms-backend.jar` 中 `org.springframework:spring-webmvc:6.2.19` 的 CVE-2026-47884 和 CVE-2026-47890 设置有期限的例外，复核期限为 2026-11-09。当前 REST 应用未配置 XSLT 视图、隐式视图渲染或 SSE 视图片段；真实应用上下文测试守护这一前提。
+仅对 `app/pms-backend.jar/BOOT-INF/lib/spring-webmvc-6.2.19.jar` 中 `org.springframework:spring-webmvc:6.2.19` 的 CVE-2026-47884 和 CVE-2026-47890 设置有期限的例外，复核期限为 2026-11-09。当前 REST 应用未配置 XSLT 视图、隐式视图渲染或 SSE 视图片段；真实应用上下文测试守护这一前提。
+
+正式镜像使用 Trivy 0.70.0（与 CI 相同版本）验证：修正路径前只报告这两项发现并以退出码 1 阻止发布，改为上述精确内层路径后扫描以退出码 0 通过。没有关闭其他依赖或操作系统的 HIGH / CRITICAL 检查。
 
 依赖仍属于官方受影响版本，不宣称漏洞已修补。其他 HIGH / CRITICAL 扫描与既有安全门禁保持启用；新增上述能力或升级依赖必须重新评估。详见 [后端适用性评估](https://github.com/xiebinJava/pms-backend/blob/main/docs/security/1.1.0-spring-mvc-assessment.md)。
