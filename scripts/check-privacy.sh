@@ -27,7 +27,18 @@ regex="$(printf '%s|' "${patterns[@]}")"
 regex="${regex%|}"
 
 cd "$ROOT"
-if git grep -I -n -i -E --untracked -e "$regex" -- ':!scripts/privacy-denylist.txt'; then
+matches="$(git grep -I -n -i -E --untracked -e "$regex" -- ':!scripts/privacy-denylist.txt' || true)"
+
+# The public npm package coordinate is intentionally documented so users can
+# install the CLI. Keep this allowlist exact; other occurrences of the
+# identifier must still fail the privacy scan.
+violations="$matches"
+if [[ -n "$violations" ]]; then
+  violations="$(printf '%s\n' "$violations" | grep -vF '@brad.xie/pms-cli' || true)"
+fi
+
+if [[ -n "$violations" ]]; then
+  printf '%s\n' "$violations"
   echo "privacy scan failed: remove company brand, internal hostnames, and real-person identifiers" >&2
   exit 1
 fi
