@@ -51,6 +51,12 @@
 
 <p align="center"><sub>以上 14 张截图于 2026-10-09 使用正式 1.1.0 镜像重新拍摄，均为中文界面。项目、需求、专题、故事、迭代、系统版本和组织信息来自隔离演示库中的虚构数据，不包含真实业务或人员信息。点击图片可查看原图。</sub></p>
 
+## 1.1.1 更新重点
+
+- **AI 参与项目管理生命周期**：后端提供可授权的资源上下文、能力查询、项目创建回读和需求分析成果保存契约，配套 `pms-cli` 可通过自然语言入口安全调用。
+- **系统版本关联视图**：系统版本详情新增关联项目、专题、故事和来源迭代的展示，按项目和迭代组织信息，不把专题与迭代误表示为上下级关系。
+- **发行一致性**：前后端镜像、发行仓库和安装包统一锁定到 `1.1.1`，继续使用固定版本镜像，不使用 `latest`。
+
 ## 1.1.0 更新重点
 
 - **需求到交付闭环**：需求、项目、专题、故事分别使用自己的流程模板，需求可关联项目、专题或故事。功能需求在需求澄清节点选择所属系统，非功能需求不展示该字段。
@@ -112,11 +118,11 @@ cd pms-distribution
 
 请立刻修改该密码。MySQL 与 JWT 等基础设施密钥仍由脚本随机生成，写入未被 Git 跟踪的 `.pms-bootstrap-secrets`。生产部署必须更换管理员密码（`validate-production-config.sh` 会拒绝上述默认值）。
 
-当前发行版本：[`1.1.0`](https://github.com/xiebinJava/pms-distribution/releases/tag/v1.1.0)。镜像在 GHCR，可匿名拉取，支持 `linux/amd64` 和 `linux/arm64`。
+当前发行版本：[`1.1.1`](https://github.com/xiebinJava/pms-distribution/releases/tag/v1.1.1)。镜像在 GHCR，可匿名拉取，支持 `linux/amd64` 和 `linux/arm64`。
 
-也可直接下载 [tar.gz 安装包](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.0/pms-1.1.0.tar.gz)、[zip 安装包](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.0/pms-1.1.0.zip) 和 [SHA256SUMS](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.0/SHA256SUMS)。把两个安装包与校验文件放在同一目录，运行 `sha256sum -c SHA256SUMS`（macOS 使用 `shasum -a 256 -c SHA256SUMS`）核对后再解压安装。
+也可直接下载 [tar.gz 安装包](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.1/pms-1.1.1.tar.gz)、[zip 安装包](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.1/pms-1.1.1.zip) 和 [SHA256SUMS](https://github.com/xiebinJava/pms-distribution/releases/download/v1.1.1/SHA256SUMS)。把两个安装包与校验文件放在同一目录，运行 `sha256sum -c SHA256SUMS`（macOS 使用 `shasum -a 256 -c SHA256SUMS`）核对后再解压安装。
 
-安装、升级、备份恢复与正式镜像界面的验收范围见 [1.1.0 发布验收记录](docs/operations/release-1.1.0-verification.md)。本版对两项 Spring MVC 发现采用限定到包版本、JAR 路径且于 2026-11-09 到期的“不具备触发条件”例外；这不代表依赖已修复，详见 [安全适用性评估](https://github.com/xiebinJava/pms-backend/blob/main/docs/security/1.1.0-spring-mvc-assessment.md)。其他 HIGH / CRITICAL 安全门禁保持启用。
+安装、升级、备份恢复与正式镜像界面的验收范围见 [1.1.0 发布验收记录](docs/operations/release-1.1.0-verification.md)。1.1.1 复用同一发行流程，并新增 AI 连接器和系统版本关联能力；本版对两项 Spring MVC 发现采用限定到包版本、JAR 路径且于 2026-11-09 到期的“不具备触发条件”例外；这不代表依赖已修复，详见 [安全适用性评估](https://github.com/xiebinJava/pms-backend/blob/main/docs/security/1.1.0-spring-mvc-assessment.md)。其他 HIGH / CRITICAL 安全门禁保持启用。
 
 如果改了 `PMS_PORT`，请把 `PMS_CORS_ALLOWED_ORIGINS` 和 `PMS_PUBLIC_BASE_URL` 改成同一端口。只改端口、不改 CORS 时，浏览器登录会被后端拒绝。`bootstrap.sh` 在端口已改、CORS 仍是示例值时，会自动对齐（见下方配置）。
 
@@ -126,7 +132,7 @@ cd pms-distribution
 ./scripts/status.sh
 ./scripts/logs.sh backend
 ./scripts/backup.sh
-./scripts/upgrade.sh 1.1.0
+./scripts/upgrade.sh 1.1.1
 ```
 
 升级前先更新本仓库的安装脚本，再执行升级命令。1.1.0 修复了旧脚本导出旧版本环境变量、导致 Compose 仍拉取旧镜像的问题；不能仅修改旧安装目录中的 `.env` 就认为升级已完成。升级会先备份，数据库迁移至 V69，其中项目交接的已废弃历史字段会被清理。
