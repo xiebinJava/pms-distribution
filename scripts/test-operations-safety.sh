@@ -44,6 +44,7 @@ if [[ "$1" == "inspect" ]]; then
 fi
 if [[ "$1 $2" == "volume inspect" && "$*" == *restore* ]]; then exit 1; fi
 if [[ "$1 $2" == "run --rm" && "$*" == *mysqldump* ]]; then echo 'SELECT 1;'; exit 0; fi
+if [[ "$*" == "run --rm -i"* && "$*" == *"mysql:8.4"* && "$*" != *mysqldump* ]]; then cat >/dev/null; exit 0; fi
 if [[ "$1 $2" == "run --rm" && "$*" == *busybox* && "$*" == *tar* ]]; then for arg in "$@"; do case "$arg" in *:/backup) tar -czf "${arg%:/backup}/uploads.tar.gz" --files-from /dev/null;; esac; done; exit 0; fi
 if [[ "$1" == "exec" && "$*" == *old-backend* ]]; then echo '{"status":"UP"}'; exit 0; fi
 if [[ "$1" == "exec" && "$*" == *new-backend* && "${FAKE_UPGRADE_SUCCESS:-}" == 1 ]]; then echo '{"status":"UP"}'; exit 0; fi
