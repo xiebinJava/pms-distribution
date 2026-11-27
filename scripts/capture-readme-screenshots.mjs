@@ -1,6 +1,6 @@
 // Regenerates docs/screenshots/*.png from a running install.
 // Requires a sibling pms-front checkout (for @playwright/test), local Chrome,
-// and ENV_FILE with bootstrap admin credentials. Do not commit that env file.
+// and PMS_SCREENSHOT_PASSWORD for the account after first-login setup.
 import { createRequire } from 'node:module'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -25,10 +25,10 @@ const env = Object.fromEntries(
 
 const port = env.PMS_PORT || '5173'
 const base = process.env.PMS_BASE_URL || `http://localhost:${port}`
-const email = env.PMS_BOOTSTRAP_ADMIN_EMAIL
-const password = env.PMS_BOOTSTRAP_ADMIN_PASSWORD
+const email = process.env.PMS_SCREENSHOT_EMAIL || env.PMS_BOOTSTRAP_ADMIN_EMAIL
+const password = process.env.PMS_SCREENSHOT_PASSWORD
 if (!email || !password) {
-  throw new Error('bootstrap admin email/password missing from ENV_FILE')
+  throw new Error('set PMS_SCREENSHOT_EMAIL and PMS_SCREENSHOT_PASSWORD to current login credentials')
 }
 
 const systemFonts = `

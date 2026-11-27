@@ -14,8 +14,8 @@
 | # | 步骤 | 期望 | 结果 |
 | --- | --- | --- | --- |
 | 1 | `bash scripts/verify-ghcr-images.sh` | backend / frontend 镜像匿名可读 | 发布前必过 |
-| 2 | `./scripts/bootstrap.sh` | 生成 `.env` 和 `.pms-bootstrap-secrets`（MySQL/JWT），服务健康 | 发布前必过 |
-| 3 | 打开 `http://localhost:5173`，用 `admin@example.com` / `PmsAdmin123!` 登录 | 登录页可用，管理员可进入工作台 | 发布前必过 |
+| 2 | `./scripts/bootstrap.sh` | 生成 `.env` 、`.pms-bootstrap-secrets` 和私有的 `.pms-bootstrap-admin-password`，服务健康 | 发布前必过 |
+| 3 | 打开 `http://localhost:5173`，用管理员邮箱和交接文件中的密码登录，设置新密码后重新登录 | 登录页可用，管理员可进入工作台 | 发布前必过 |
 | 4 | `docker compose --env-file .env -f compose.yaml restart` 后再次登录 | 项目和附件数据仍在 | 发布前必过 |
 | 5 | `./scripts/backup.sh` | 生成含数据库和附件的归档 | 发布前必过 |
 | 6 | 在新 Compose 项目名上 `RESTORE_CONFIRM=YES ./scripts/restore.sh <归档>` | 恢复后数据可读 | 发布前必过 |

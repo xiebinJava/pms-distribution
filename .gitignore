@@ -8,3 +8,13 @@ data/
 .DS_Store
 .idea/
 .vscode/
+
+.pms-bootstrap-admin-password
+.pms-bootstrap.*/
+.env.update.*
+*.pms-bootstrap-admin-password
+*.pms-bootstrap-secrets
+.pms-bootstrap-initialized
+*.pms-bootstrap-initialized
+*.upgrade.lock/
+*.upgrade-recovery/

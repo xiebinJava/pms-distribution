@@ -12,6 +12,13 @@ sha256_check() { if command -v sha256sum >/dev/null 2>&1; then sha256sum -c "$1"
 require_sha256() { command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1 || die "sha256sum or shasum is required"; }
 compose() { docker compose --project-name "$COMPOSE_PROJECT_NAME" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 [[ "${RESTORE_CONFIRM:-}" == "YES" ]] || die "set RESTORE_CONFIRM=YES to confirm an isolated restore"
+rollback=0
+if [[ "${1:-}" == "--upgrade-rollback" ]]; then
+  rollback=1
+  rollback_database="${RESTORE_DATABASE:?rollback requires a destination database}"
+  rollback_volume="${RESTORE_UPLOADS_VOLUME:?rollback requires a destination upload volume}"
+  shift
+fi
 [[ $# -eq 1 ]] || die "usage: RESTORE_CONFIRM=YES $0 <backup.tar.gz>"
 archive_path="$1"
 checksum_path="${archive_path}.sha256"
@@ -35,24 +42,35 @@ while IFS= read -r member; do
 done <<<"$uploads_members"
 backup_format="$(sed -n 's/^PMS_BACKUP_FORMAT=//p' "$work_dir/metadata.env")"
 backup_database="$(sed -n 's/^PMS_BACKUP_DATABASE=//p' "$work_dir/metadata.env")"
-[[ "$backup_format" == "1" && "$backup_database" == "pms" ]] || die "backup metadata is unsupported"
+[[ "$backup_format" == "1" && "$backup_database" =~ ^[A-Za-z0-9_]{1,64}$ ]] || die "backup metadata is unsupported"
 [[ -f "$ENV_FILE" ]] || die "missing $ENV_FILE; run ./scripts/bootstrap.sh first"
 set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 set +a
-[[ "${PMS_DEPLOYMENT_ENV:-development}" != "production" ]] || die "refusing restore from a production configuration; use an isolated non-production clone"
+[[ "$rollback" == 1 || "${PMS_DEPLOYMENT_ENV:-development}" != "production" ]] || die "refusing restore from a production configuration; use an isolated non-production clone"
 [[ -n "${PMS_VERSION:-}" ]] || die "PMS_VERSION must be set"
 [[ -n "${MYSQL_ROOT_PASSWORD:-}" ]] || die "MySQL root password must be set"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-restore_database="${RESTORE_DATABASE:-pms_restore_$timestamp}"
-current_uploads_volume="${COMPOSE_PROJECT_NAME}_pms-uploads"
-restore_uploads_volume="${RESTORE_UPLOADS_VOLUME:-${COMPOSE_PROJECT_NAME}_pms-uploads-restore-$timestamp}"
-[[ "$restore_database" =~ ^[A-Za-z0-9_]+$ ]] || die "RESTORE_DATABASE contains unsafe characters"
-[[ "$restore_database" != "pms" ]] || die "refusing to overwrite pms"
+current_uploads_volume="${PMS_UPLOADS_VOLUME:-${COMPOSE_PROJECT_NAME}_pms-uploads}"
+if (( rollback )); then
+  restore_database="$rollback_database"
+  restore_uploads_volume="$rollback_volume"
+else
+  restore_database="${RESTORE_DATABASE:-pms_restore_$timestamp}"
+  restore_uploads_volume="${RESTORE_UPLOADS_VOLUME:-${COMPOSE_PROJECT_NAME}_pms-uploads-restore-$timestamp}"
+fi
+[[ "$restore_database" =~ ^[A-Za-z0-9_]{1,64}$ ]] || die "RESTORE_DATABASE contains unsafe characters"
+[[ "$restore_database" != "pms" && "$restore_database" != "${MYSQL_DB:-pms}" ]] || die "refusing to overwrite pms"
 [[ "$restore_uploads_volume" != "$current_uploads_volume" ]] || die "refusing to overwrite current pms-uploads volume"
 require_command docker
 docker compose version >/dev/null 2>&1 || die "Docker Compose v2 is required"
+if (( rollback )); then
+  [[ "$restore_database" =~ ^[A-Za-z0-9]+$ ]] || die "rollback database must be an exact grant target"
+  states="$(compose ps --all --format '{{.State}}' backend frontend)" || die "cannot check application services"
+  if grep -Eq '^(running|restarting|paused)$' <<<"$states"; then die "stop backend and frontend before rollback restore"; fi
+  [[ -n "${MYSQL_USER:-}" ]] || die "MYSQL_USER is required to grant access to the restored database"
+fi
 mysql_id="$(compose ps -q mysql 2>/dev/null || true)"
 [[ -n "$mysql_id" ]] || die "mysql is not running"
 mysql_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}' "$mysql_id" 2>/dev/null || true)"
@@ -69,6 +87,16 @@ printf 'MYSQL_PWD=%s\n' "$MYSQL_ROOT_PASSWORD" >"$mysql_env"
 chmod 600 "$mysql_env"
 docker run --rm --env-file "$mysql_env" --network "$network" "$image" mysql --protocol=tcp -hmysql -P3306 -uroot -e "CREATE DATABASE \`$restore_database\`"
 gunzip -c "$work_dir/database.sql.gz" | docker run --rm -i --env-file "$mysql_env" --network "$network" "$image" mysql --protocol=tcp -hmysql -P3306 -uroot "$restore_database"
-docker volume create "$restore_uploads_volume" >/dev/null
+volume_command=(docker volume create)
+if (( rollback )); then
+  volume_command+=(--label "com.docker.compose.project=$COMPOSE_PROJECT_NAME" --label "com.docker.compose.volume=pms-uploads")
+fi
+"${volume_command[@]}" "$restore_uploads_volume" >/dev/null
 docker run --rm -v "$restore_uploads_volume":/target -v "$work_dir":/backup:ro busybox:1.36.1-musl sh -c 'tar xzf /backup/uploads.tar.gz -C /target'
+if (( rollback )); then
+  # Match the app account created by the MySQL image while quoting its name as SQL data.
+  app_user="${MYSQL_USER//\'/\'\'}"
+  docker run --rm --env-file "$mysql_env" --network "$network" "$image" mysql --protocol=tcp -hmysql -P3306 -uroot \
+    -e "SET SESSION sql_mode='NO_BACKSLASH_ESCAPES'; GRANT ALL ON \`$restore_database\`.* TO '$app_user'@'%';"
+fi
 echo "restore complete in isolated targets: database=$restore_database uploads_volume=$restore_uploads_volume"

@@ -80,9 +80,11 @@ cd pms-distribution
 | 项 | 值 |
 | --- | --- |
 | 登录邮箱 | `admin@example.com` |
-| 密码 | `PmsAdmin123!` |
+| 初始密码 | 从安装脚本提示的 `.pms-bootstrap-admin-password` 文件领取，权限为 0600 |
 
-请立刻修改该密码。MySQL 与 JWT 等基础设施密钥由脚本随机生成，写入未被 Git 跟踪的 `.pms-bootstrap-secrets`。
+首次登录后先设置新密码，再重新登录。重跑安装保留首次领取的值，已有数据库的账号沿用原密码。可在首次运行前通过环境变量 `PMS_BOOTSTRAP_ADMIN_PASSWORD` 提供独立口令，至少 12 字符且最多 72 个 UTF-8 字节。用新密码验证项目访问后，请销毁一次性交接副本。MySQL 与 JWT 等基础设施密钥由脚本随机生成，写入未被 Git 跟踪的 `.pms-bootstrap-secrets`。
+
+本节的强制首登改密流程需要同时构建本次变更的后端、前端和分发脚本。已发布的 1.2.0 镜像沿用原首登流程。
 
 当前发行版本：[`1.2.0`](https://github.com/xiebinJava/pms-distribution/releases/tag/v1.2.0)。镜像在 GHCR，可匿名拉取，支持 `linux/amd64` 和 `linux/arm64`。
 
